@@ -26,7 +26,7 @@ from config import ANNOTATED_DIR, REPORTS_DIR
 logger = logging.getLogger(__name__)
 
 
-def analyze_cover(image_path, isbn="unknown", use_google_vision=True):
+def analyze_cover(image_path, isbn="unknown", use_google_vision=True, cover_type="front"):
     """Run the complete CV analysis pipeline on a book cover image.
 
     Steps:
@@ -58,7 +58,7 @@ def analyze_cover(image_path, isbn="unknown", use_google_vision=True):
     logger.info(f"Image loaded: {w}x{h} pixels")
 
     # Step 2: Calculate zones
-    zones = get_zones(w, h)
+    zones = get_zones(w, h, cover_type=cover_type)
     logger.info(f"Zones calculated (DPI: {zones['dpi']:.0f})")
 
     # Step 3: Detect text via OCR

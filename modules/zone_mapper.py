@@ -22,13 +22,14 @@ from config import (
 )
 
 
-def get_zones(image_width, image_height, dpi=None):
+def get_zones(image_width, image_height, dpi=None, cover_type="front"):
     """Calculate all zone boundaries in pixels for a given image.
 
     Args:
         image_width: Image width in pixels
         image_height: Image height in pixels
         dpi: Dots per inch. If None, calculated from image width assuming 6-inch cover.
+        cover_type: "front" or "back". Badge zone applies to front only.
 
     Returns:
         dict with keys: margins, safe_area, badge_zone, dpi
@@ -42,7 +43,8 @@ def get_zones(image_width, image_height, dpi=None):
     margin_right = mm_to_pixels(MARGIN_SIDES_MM, dpi)
     margin_top = mm_to_pixels(MARGIN_TOP_MM, dpi)
     margin_bottom = mm_to_pixels(MARGIN_BOTTOM_MM, dpi)
-    badge_height = mm_to_pixels(BADGE_ZONE_HEIGHT_MM, dpi)
+    badge_mm = BADGE_ZONE_HEIGHT_MM if str(cover_type).lower() == "front" else 0
+    badge_height = mm_to_pixels(badge_mm, dpi)
 
     # Margins define the unsafe border strip around the cover
     margins = {
@@ -108,30 +110,32 @@ def draw_zones(image, zones):
         cv2.FONT_HERSHEY_SIMPLEX, 0.6, COLOR_SAFE_ZONE, 2,
     )
 
-    # Draw badge zone (red, filled with transparency)
-    overlay = annotated.copy()
-    cv2.rectangle(
-        overlay,
-        (badge["left"], badge["top"]),
-        (badge["right"], badge["bottom"]),
-        COLOR_BADGE_ZONE,
-        -1,  # filled
-    )
-    cv2.addWeighted(overlay, 0.3, annotated, 0.7, 0, annotated)
+    # Draw badge zone (front cover only)
+    badge_height = badge["bottom"] - badge["top"]
+    if badge_height > 0:
+        overlay = annotated.copy()
+        cv2.rectangle(
+            overlay,
+            (badge["left"], badge["top"]),
+            (badge["right"], badge["bottom"]),
+            COLOR_BADGE_ZONE,
+            -1,  # filled
+        )
+        cv2.addWeighted(overlay, 0.3, annotated, 0.7, 0, annotated)
 
-    # Draw badge zone border
-    cv2.rectangle(
-        annotated,
-        (badge["left"], badge["top"]),
-        (badge["right"], badge["bottom"]),
-        COLOR_BADGE_ZONE,
-        2,
-    )
-    cv2.putText(
-        annotated, "BADGE ZONE (9mm) - NO TEXT HERE",
-        (badge["left"] + 10, badge["top"] + 20),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2,
-    )
+        # Draw badge zone border
+        cv2.rectangle(
+            annotated,
+            (badge["left"], badge["top"]),
+            (badge["right"], badge["bottom"]),
+            COLOR_BADGE_ZONE,
+            2,
+        )
+        cv2.putText(
+            annotated, "BADGE ZONE (9mm) - NO TEXT HERE",
+            (badge["left"] + 10, badge["top"] + 20),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2,
+        )
 
     # Draw margin lines (cyan)
     # Top margin

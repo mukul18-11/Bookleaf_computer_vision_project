@@ -70,6 +70,7 @@ def run_pipeline(file_path, filename=None):
     isbn = preprocessed["isbn"]
 
     results = []
+    results_by_type = {}
     for img_data in preprocessed["images"]:
         image_path = img_data["path"]
         cover_type = img_data["type"]
@@ -81,8 +82,10 @@ def run_pipeline(file_path, filename=None):
             image_path,
             isbn=f"{isbn}_{cover_type}" if len(preprocessed["images"]) > 1 else isbn,
             use_google_vision=True,
+            cover_type=cover_type,
         )
         results.append(result)
+        results_by_type[cover_type] = result
 
         # Log result summary
         logger.info(f"  Status: {result['status']}")
@@ -92,8 +95,12 @@ def run_pipeline(file_path, filename=None):
             for issue in result["issues"]:
                 logger.info(f"    [{issue['severity']}] {issue['description']}")
 
-    # Use the front cover result as the primary result
-    primary_result = results[0] if results else {"status": "ERROR", "isbn": isbn}
+    # Use the front cover result as the primary result (if available)
+    primary_result = (
+        results_by_type.get("front")
+        or (results[0] if results else None)
+        or {"status": "ERROR", "isbn": isbn}
+    )
 
     # Step 4: Log to Airtable (if configured)
     try:
@@ -208,11 +215,34 @@ def mode_batch():
     for filename in files:
         file_path = os.path.join(SAMPLE_FRONT_DIR, filename)
         try:
-            result = analyze_cover(file_path, isbn=filename.split(".")[0], use_google_vision=True)
-            all_results.append(result)
+            preprocessed = preprocess(file_path)
+            isbn = preprocessed["isbn"] if preprocessed["isbn"] != "unknown" else filename.split(".")[0]
+
+            results_by_type = {}
+            for img_data in preprocessed["images"]:
+                image_path = img_data["path"]
+                cover_type = img_data["type"]
+
+                result = analyze_cover(
+                    image_path,
+                    isbn=f"{isbn}_{cover_type}" if len(preprocessed["images"]) > 1 else isbn,
+                    use_google_vision=True,
+                    cover_type=cover_type,
+                )
+                results_by_type[cover_type] = result
+
+            primary_result = (
+                results_by_type.get("front")
+                or (list(results_by_type.values())[0] if results_by_type else None)
+            )
+
+            if not primary_result:
+                raise RuntimeError("No results produced for file")
+
+            all_results.append(primary_result)
             print(
-                f"  {result['status']:15} | {result['confidence']:5.1f}% | "
-                f"{result['total_issues']:6} | {filename}"
+                f"  {primary_result['status']:15} | {primary_result['confidence']:5.1f}% | "
+                f"{primary_result['total_issues']:6} | {filename}"
             )
         except Exception as e:
             logger.error(f"Failed: {filename}: {e}")

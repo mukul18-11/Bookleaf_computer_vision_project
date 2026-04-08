@@ -80,7 +80,12 @@ def detect_text_easyocr(image_path):
     Returns:
         list of dicts: [{text, bbox: {left, top, right, bottom}, confidence, level}]
     """
-    import easyocr
+    try:
+        import easyocr
+    except ImportError as e:
+        raise RuntimeError(
+            "EasyOCR is not installed. Install it or enable Google Vision OCR."
+        ) from e
 
     reader = easyocr.Reader(["en"], gpu=False)
     results = reader.readtext(image_path)
@@ -143,7 +148,9 @@ def detect_text(image_path, use_google_vision=True):
             method = "easyocr"
             logger.info(f"EasyOCR detected {len(detections)} text elements")
         except Exception as e:
-            logger.error(f"EasyOCR also failed: {e}")
+            # If EasyOCR isn't installed (common when relying on Google Vision),
+            # keep the pipeline running and just return no OCR detections.
+            logger.warning(f"EasyOCR unavailable/failed: {e}")
             return {"detections": [], "full_text": "", "method": "none"}
 
     # Extract full text (join all word-level detections)
