@@ -32,6 +32,9 @@ OVERLAP_TOLERANCE_PIXELS = 5           # Small tolerance for edge cases
 # =============================================================================
 # IMAGE QUALITY THRESHOLDS
 # =============================================================================
+# Toggle: if False, blur/pixelation/resolution issues are not produced.
+# (You can still enable it later if BookLeaf wants quality validation.)
+ENABLE_QUALITY_CHECKS = False
 MIN_DPI = 150                          # Minimum acceptable DPI
 MIN_WIDTH_PIXELS = 1200                # Minimum image width
 BLUR_THRESHOLD = 100.0                 # Laplacian variance below this = blurry

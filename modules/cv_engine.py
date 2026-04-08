@@ -21,7 +21,7 @@ from modules.text_detector import detect_text, draw_text_detections, group_text_
 from modules.overlap_checker import check_all_overlaps, draw_overlaps
 from modules.quality_checker import check_quality
 from modules.classifier import build_classification_result
-from config import ANNOTATED_DIR, REPORTS_DIR
+from config import ANNOTATED_DIR, REPORTS_DIR, ENABLE_QUALITY_CHECKS
 
 logger = logging.getLogger(__name__)
 
@@ -79,16 +79,22 @@ def analyze_cover(image_path, isbn="unknown", use_google_vision=True, cover_type
         f"{overlap_result['margin_violations']} margin violations"
     )
 
-    # Step 5: Check image quality
-    quality_result = check_quality(image)
-    logger.info(
-        f"Quality check: blur={quality_result['blur']['is_blurry']}, "
-        f"pixelated={quality_result['pixelation']['is_pixelated']}, "
-        f"low_res={quality_result['resolution']['is_low_res']}"
-    )
+    # Step 5: Check image quality (optional)
+    if ENABLE_QUALITY_CHECKS:
+        quality_result = check_quality(image)
+        logger.info(
+            f"Quality check: blur={quality_result['blur']['is_blurry']}, "
+            f"pixelated={quality_result['pixelation']['is_pixelated']}, "
+            f"low_res={quality_result['resolution']['is_low_res']}"
+        )
+        quality_issues = quality_result["issues"]
+    else:
+        quality_result = {"issues": [], "blur": {}, "pixelation": {}, "resolution": {}}
+        quality_issues = []
+        logger.info("Quality check: skipped (ENABLE_QUALITY_CHECKS=False)")
 
     # Combine all issues
-    all_issues = overlap_result["issues"] + quality_result["issues"]
+    all_issues = overlap_result["issues"] + quality_issues
 
     # Step 6: Create annotated image
     annotated = image.copy()
