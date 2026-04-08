@@ -1,0 +1,32 @@
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output (annotated images and reports are generated)
+output/annotated/*.png
+output/reports/*.json
+
+# Google Cloud credentials
+*.json
+!package.json
+
+# Byte-compiled
+*.py[cod]
+*$py.class

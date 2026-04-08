@@ -1,0 +1,14 @@
+opencv-python
+numpy
+Pillow
+pdf2image
+google-cloud-vision
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+flask
+pyairtable
+python-dotenv
+requests
+watchdog
