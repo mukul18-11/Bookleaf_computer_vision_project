@@ -1,0 +1,331 @@
+================================================================================
+  STEP-BY-STEP EXECUTION GUIDE
+  (Exactly what to do, in order, when you're ready to start coding)
+================================================================================
+
+
+================================================================================
+STEP 0: ENVIRONMENT SETUP
+================================================================================
+
+COMMAND 1: Create and activate virtual environment
+  cd ~/Desktop/Bookleaf_computer_vision_project
+  python3 -m venv venv
+  source venv/bin/activate
+
+COMMAND 2: Install required packages
+  pip install opencv-python easyocr pdf2image Pillow numpy
+  pip install pyairtable python-dotenv requests flask
+  pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+COMMAND 3: Install system dependencies (Mac)
+  brew install poppler    # For PDF conversion
+  brew install tesseract  # Optional, if using Tesseract instead of EasyOCR
+
+COMMAND 4: Create project folders
+  mkdir -p modules templates sample_covers/front sample_covers/back
+  mkdir -p tests output/annotated output/reports docs
+
+COMMAND 5: Create requirements.txt
+  pip freeze > requirements.txt
+
+COMMAND 6: Copy your 9 sample book covers into sample_covers/ folder
+  - Front covers → sample_covers/front/
+  - Back covers → sample_covers/back/
+
+
+================================================================================
+STEP 1: BUILD THE ZONE MAPPER (modules/zone_mapper.py)
+================================================================================
+
+PURPOSE: Calculate safe areas and badge zones based on image dimensions.
+
+WHAT THIS MODULE DOES:
+  Input:  Image dimensions (width, height in pixels) + DPI
+  Output: Dictionary with all zone boundaries in pixels
+
+ZONES TO CALCULATE:
+  - safe_area: {left, top, right, bottom} — where text SHOULD be
+  - badge_zone: {left, top, right, bottom} — where badge goes (BOTTOM 9mm)
+  - margins: {left, top, right, bottom} — unsafe border areas
+
+VERIFICATION:
+  → Load a sample cover
+  → Draw all zones on it with colored rectangles
+  → Visually confirm the zones look correct
+  → Save as "zones_visualization.png"
+
+
+================================================================================
+STEP 2: BUILD THE TEXT DETECTOR (modules/text_detector.py)
+================================================================================
+
+PURPOSE: Find all text on the book cover and return positions.
+
+WHAT THIS MODULE DOES:
+  Input:  Image file path
+  Output: List of {text, bbox, confidence} for each text element
+
+STEPS:
+  1. Load image
+  2. Run EasyOCR on it
+  3. For each detected text:
+     - Get the bounding box (4 corner points)
+     - Convert to {left, top, right, bottom} format
+     - Store the text content and confidence
+  4. Return the list
+
+VERIFICATION:
+  → Run on a sample cover
+  → Print all detected text and positions
+  → Draw bounding boxes on the image
+  → Check: Does it correctly find the author name? Title? Other text?
+
+
+================================================================================
+STEP 3: BUILD THE OVERLAP CHECKER (modules/overlap_checker.py)  ⭐ MOST IMPORTANT
+================================================================================
+
+PURPOSE: Check if any detected text overlaps with the badge zone or margins.
+
+WHAT THIS MODULE DOES:
+  Input:  List of text detections + zone boundaries
+  Output: List of issues found + confidence scores
+
+CHECKS TO PERFORM:
+  1. CRITICAL: Does any text overlap with badge_zone?
+     → If yes: issue = "BADGE_OVERLAP", severity = "CRITICAL"
+  
+  2. CRITICAL: Is author name in the badge_zone?
+     → If yes: issue = "AUTHOR_BADGE_CONFLICT", severity = "CRITICAL"
+  
+  3. WARNING: Does any text extend outside safe_area?
+     → If yes: issue = "MARGIN_VIOLATION", severity = "WARNING"
+  
+  4. WARNING: Is text too close to edges?
+     → If yes: issue = "BORDER_PROXIMITY", severity = "WARNING"
+
+CONFIDENCE CALCULATION:
+  - Start at 100%
+  - Reduce based on OCR confidence
+  - Reduce for borderline overlaps (small overlap amount)
+  - Final score = average of relevant factors
+
+VERIFICATION:
+  → Test with "good" cover → should return NO issues
+  → Test with "bad" cover → should detect badge overlap
+  → Verify confidence scores make sense
+
+
+================================================================================
+STEP 4: BUILD THE QUALITY CHECKER (modules/quality_checker.py)
+================================================================================
+
+PURPOSE: Check image quality (resolution, blur, etc.)
+
+CHECKS:
+  1. Resolution: Is DPI >= 150? Is image at least 1200 pixels wide?
+  2. Blur detection: Use Laplacian variance (cv2.Laplacian)
+     → Low variance = blurry image
+  3. If quality issues found, add to issues list
+
+VERIFICATION:
+  → Test with a high-res cover → should pass
+  → Test with an intentionally blurred/low-res cover → should flag it
+
+
+================================================================================
+STEP 5: BUILD THE CV ENGINE (modules/cv_engine.py)
+================================================================================
+
+PURPOSE: Main analysis module that ties together zone mapper + text detector
+         + overlap checker + quality checker.
+
+WHAT THIS MODULE DOES:
+  Input:  Image file path
+  Output: Complete analysis results dictionary
+
+FLOW:
+  1. Load image, determine DPI
+  2. Call zone_mapper → get zones
+  3. Call text_detector → get text positions
+  4. Call overlap_checker → get overlap issues
+  5. Call quality_checker → get quality issues
+  6. Combine all issues
+  7. Create annotated image (draw all findings)
+  8. Return results
+
+RESULT FORMAT:
+  {
+    "isbn": "9780134685991",
+    "status": "PASS" or "REVIEW_NEEDED",
+    "confidence": 95.5,
+    "issues": [
+      {
+        "type": "BADGE_OVERLAP",
+        "severity": "CRITICAL",
+        "description": "Author name overlaps with award badge zone",
+        "text": "John Smith",
+        "overlap_percentage": 45.2,
+        "correction": "Move author name at least 15mm above the bottom edge"
+      }
+    ],
+    "annotated_image_path": "output/annotated/9780134685991_annotated.png",
+    "timestamp": "2026-04-06T17:30:00"
+  }
+
+
+================================================================================
+STEP 6: BUILD THE CLASSIFIER (modules/classifier.py)
+================================================================================
+
+PURPOSE: Decide PASS or REVIEW NEEDED based on analysis results.
+
+RULES:
+  - If ZERO issues → PASS
+  - If ANY critical issue with confidence >= 85% → REVIEW NEEDED
+  - If only warnings with low confidence → REVIEW NEEDED (human should check)
+  - If issues but all below threshold → PASS (marginal, acceptable)
+
+SIMPLE VERSION:
+  def classify(issues, overall_confidence):
+      if len(issues) == 0:
+          return "PASS"
+      if any(i['severity'] == 'CRITICAL' for i in issues):
+          return "REVIEW_NEEDED"
+      if overall_confidence < 85:
+          return "REVIEW_NEEDED"  # Not confident enough, let human check
+      return "PASS"
+
+
+================================================================================
+STEP 7: BUILD PREPROCESSOR (modules/preprocessor.py)
+================================================================================
+
+PURPOSE: Handle file input — PDF conversion, ISBN extraction.
+
+FUNCTIONS:
+  1. extract_isbn(filename) → Parse ISBN from "ISBN_text.pdf" format
+  2. convert_pdf_to_images(pdf_path) → Returns list of PIL images
+  3. preprocess(file_path) → Returns ready-to-analyze images + metadata
+
+
+================================================================================
+STEP 8: BUILD AIRTABLE CLIENT (modules/airtable_client.py)
+================================================================================
+
+PURPOSE: Create and update records in Airtable.
+
+SETUP NEEDED FIRST:
+  1. Create Airtable account at airtable.com
+  2. Create a "Base" called "BookLeaf Cover Validation"
+  3. Create a table called "Cover Analysis" with these fields:
+     - Book ID (Single Line Text)
+     - Detection Timestamp (Date/Time)
+     - Issue Type (Multi Select)
+     - Severity (Single Select: Critical, Warning, Info)
+     - Status (Single Select: Pass, Review Needed)
+     - Confidence Score (Number, 0-100)
+     - Correction Instructions (Long Text)
+     - Annotated Image URL (URL)
+     - Revision Count (Number)
+     - Author Email (Email)
+  4. Get your API Key from airtable.com/account
+  5. Get the Base ID from the API docs URL
+
+FUNCTIONS TO BUILD:
+  1. create_record(analysis_results) → Creates new Airtable record
+  2. update_record(record_id, updates) → Updates existing record
+  3. find_record_by_isbn(isbn) → Find if this ISBN was analyzed before
+
+
+================================================================================
+STEP 9: BUILD EMAIL SENDER (modules/email_sender.py)
+================================================================================
+
+PURPOSE: Send personalized emails to authors.
+
+TWO EMAIL TEMPLATES:
+
+  PASS TEMPLATE:
+    Subject: "Your BookLeaf Cover Has Been Approved ✅"
+    Body: Congratulations message, cover passed all checks
+
+  REVIEW TEMPLATE:
+    Subject: "Action Required: Your BookLeaf Cover Needs Revision ⚠️"
+    Body: Specific issues listed, correction steps, resubmission deadline
+
+PERSONALIZATION:
+  - Author name (from ISBN → author mapping)
+  - Specific issues found
+  - Correction instructions
+  - Support contact info
+
+AUTHOR MAPPING:
+  - You'll need a simple lookup table (JSON or Airtable)
+  - ISBN → {author_name, author_email}
+
+
+================================================================================
+STEP 10: BUILD WEBHOOK SERVER (modules/webhook_server.py)
+================================================================================
+
+PURPOSE: Receive INSTANT notifications from Google Drive when new files are uploaded.
+
+HOW WEBHOOKS WORK (simple explanation):
+  - Your code runs a small web server (using Flask)
+  - You register your server URL with Google Drive: "notify me at this URL"
+  - When someone uploads a file → Google sends a message to your server
+  - Your server receives it → downloads the file → runs the pipeline
+  - It's INSTANT — no waiting, no checking every 30 seconds
+
+WHAT YOU NEED:
+
+  1. Flask web server with endpoint: POST /webhook/drive
+  2. Google Drive API: register a "watch channel" on your folder
+  3. ngrok (for development): exposes your localhost to the internet
+     so Google can reach your local machine
+
+FLOW:
+  Upload happens → Google calls your /webhook/drive → 
+  Your server downloads file → Triggers CV analysis pipeline
+
+FOR DEVELOPMENT/DEMO (SIMPLER ALTERNATIVE):
+  - Use watchdog library to watch a LOCAL folder
+  - When new file appears in folder → triggers pipeline
+  - This is fine for testing, then show webhook for production concept
+
+
+================================================================================
+STEP 11: WIRE EVERYTHING IN main.py
+================================================================================
+
+PURPOSE: The entry point that ties all modules together.
+
+FLOW:
+  1. Start Flask webhook server (waiting for Google Drive notifications)
+  2. When webhook receives notification of new file:
+     a. preprocessor.preprocess(file_path) → images + ISBN
+     b. cv_engine.analyze(images) → analysis_results
+     c. classifier.classify(analysis_results) → status
+     d. airtable_client.create_record(results) → record created
+     e. email_sender.send_notification(isbn, status, results) → email sent
+     f. Log everything
+  3. Server stays running, waiting for next notification
+
+
+================================================================================
+STEP 12: DOCUMENTATION & SUBMISSION
+================================================================================
+
+  1. README.md — Setup instructions, how to run, overview
+  2. docs/architecture.md — System design, diagrams
+  3. docs/api_integration.md — How integrations work
+  4. docs/testing_results.md — Accuracy numbers, test cases
+  5. tests/ — Automated test scripts
+  6. Record Loom video showing the full workflow
+
+
+================================================================================
+END OF EXECUTION GUIDE
+================================================================================

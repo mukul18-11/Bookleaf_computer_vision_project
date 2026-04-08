@@ -1,0 +1,179 @@
+================================================================================
+  PROJECT TIMELINE — 50 HOURS PLAN (WITH MY HELP)
+================================================================================
+
+IMPORTANT REALITY CHECK:
+  - You have ~50 concentrated hours
+  - With AI assistance (me helping you code), this is VERY doable
+  - Without AI help, this would take 80-100 hours for a mid-level developer
+  - With my help: ~25-30 hours of actual work (lots of buffer for learning)
+
+================================================================================
+ESTIMATED COMPLETION: 25-30 HOURS (with my help)
+BUFFER TIME: 20-25 hours (for learning, debugging, unexpected issues)
+CONFIDENCE LEVEL: HIGH — this is very achievable in your timeframe
+================================================================================
+
+
+================================================================================
+DAY 1: FOUNDATION (Hours 1-15)
+================================================================================
+
+BLOCK 1: SETUP & LEARNING (Hours 1-4)        ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 1: Read all these .txt files I made. Understand the project fully.
+  □ Hour 1.5: Watch the YouTube video they referenced (safe area margins)
+  □ Hour 2: Set up Python virtual environment, install all packages
+  □ Hour 2.5: Set up project folder structure (I'll help you scaffold it)
+  □ Hour 3-4: Quick OpenCV + EasyOCR tutorial 
+    → Just run a few examples to understand how they work
+    → Load an image, detect text, draw boxes — that's it
+  
+  MILESTONE: You can load a book cover and detect text on it ✅
+
+BLOCK 2: CORE CV ENGINE (Hours 5-10)          ⏱️ ~6 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 5-6: Build the zone mapper
+    → Convert mm measurements to pixels
+    → Define safe zones and badge zones for any image
+    → Draw the zones on images to visualize them
+  
+  □ Hour 7-8: Build the text detector
+    → Use EasyOCR to find all text on front cover
+    → Get bounding boxes for each text element
+    → Specifically identify the author name text
+  
+  □ Hour 9-10: Build the overlap detector
+    → Check if any text bounding box overlaps with badge zone
+    → Check if text respects safe margins
+    → Calculate confidence scores
+    → THIS IS THE MOST IMPORTANT PART — spend extra time here
+
+  MILESTONE: System can detect text overlap on sample covers ✅
+
+BLOCK 3: TESTING ON SAMPLES (Hours 11-13)     ⏱️ ~3 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 11: Test on "good" cover examples → should return PASS
+  □ Hour 12: Test on "bad" cover examples → should return REVIEW NEEDED
+  □ Hour 13: Tune thresholds, fix false positives/negatives
+  
+  MILESTONE: 90%+ accuracy on sample covers ✅
+
+BLOCK 4: QUALITY CHECKS (Hours 14-15)         ⏱️ ~2 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 14: Add image quality assessment (resolution, blur detection)
+  □ Hour 15: Add PDF support (pdf2image conversion)
+  
+  MILESTONE: System handles both PDF and PNG, checks quality ✅
+
+
+================================================================================
+DAY 2: INTEGRATIONS (Hours 16-28)
+================================================================================
+
+BLOCK 5: AIRTABLE INTEGRATION (Hours 16-19)    ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 16: Create Airtable account and base (I'll guide you)
+  □ Hour 17: Set up the table with all required fields
+  □ Hour 18-19: Build airtable_client.py
+    → Create records when a cover is analyzed
+    → Update records on resubmission
+    → Include all required fields (ISBN, status, confidence, etc.)
+  
+  MILESTONE: Analysis results automatically saved to Airtable ✅
+
+BLOCK 6: EMAIL SYSTEM (Hours 20-23)            ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 20: Create HTML email templates (pass + review templates)
+  □ Hour 21: Build email_sender.py (using smtplib or Brevo)
+  □ Hour 22: Add personalization (author name from ISBN lookup)
+  □ Hour 23: Test email sending with sample data
+  
+  MILESTONE: Beautiful, personalized emails sent automatically ✅
+
+BLOCK 7: GOOGLE DRIVE WEBHOOK INTEGRATION (Hours 24-27) ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 24: Set up Google Cloud project and Drive API
+  □ Hour 25: Create service account, share folder, set up Flask server
+  □ Hour 26-27: Build webhook_server.py
+    → Create Flask endpoint /webhook/drive to receive push notifications
+    → When Google notifies → download new file → trigger analysis pipeline
+    → Use ngrok to expose local server during development
+  
+  MILESTONE: Upload a cover to Drive → system auto-processes INSTANTLY ✅
+
+BLOCK 8: FULL PIPELINE (Hours 28)              ⏱️ ~1 hour
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 28: Wire everything together in main.py
+    → Drive upload triggers full pipeline
+    → Analyze → Classify → Airtable → Email → Done
+  
+  MILESTONE: Complete end-to-end workflow works ✅
+
+
+================================================================================
+DAY 3: POLISH & SUBMIT (Hours 29-40)
+================================================================================
+
+BLOCK 9: TESTING & ACCURACY (Hours 29-32)      ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 29-30: Run all 9 sample covers through the system
+  □ Hour 31: Document accuracy results (create report)
+  □ Hour 32: Fix any edge cases, tune parameters
+  
+  MILESTONE: Accuracy report shows 90%+ ✅
+
+BLOCK 10: DOCUMENTATION (Hours 33-36)          ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 33: Write README.md (overview, setup instructions)
+  □ Hour 34: Write architecture documentation
+  □ Hour 35: Write API integration docs
+  □ Hour 36: Write testing methodology and results
+  
+  MILESTONE: Clear, professional documentation ✅
+
+BLOCK 11: DEMO VIDEO & FINAL SUBMISSION (Hours 37-40) ⏱️ ~4 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  □ Hour 37: Practice the demo flow
+  □ Hour 38: Record Loom video walkthrough
+  □ Hour 39: Final code cleanup and comments
+  □ Hour 40: Package everything and submit
+  
+  MILESTONE: Submission complete! 🎉✅
+
+
+================================================================================
+TOTAL: ~40 hours of work + ~10 hours buffer
+================================================================================
+
+TIPS FOR STAYING ON TRACK:
+  1. Don't get stuck on perfection — get it working first, polish later
+  2. Ask me (AI) to write boilerplate code — focus your energy on understanding
+  3. If something takes >1 hour longer than planned, ask me for help immediately
+  4. Test frequently — don't write 500 lines then test
+  5. The CV engine is the HARDEST part — spend most time there
+  6. Integrations (Airtable, Email, Drive) are EASY with my help
+  7. Take short breaks every 2-3 hours — tired coding = buggy coding
+
+WHAT I CAN DO FOR YOU QUICKLY:
+  ✦ Write the boilerplate code for all modules
+  ✦ Set up the folder structure
+  ✦ Create email templates
+  ✦ Write the Airtable integration
+  ✦ Write the Google Drive webhook server
+  ✦ Debug any issues you run into
+  ✦ Create documentation
+  ✦ Write test scripts
+
+WHAT YOU NEED TO DO YOURSELF:
+  ✦ Create API accounts (Airtable, Google Cloud, etc.)
+  ✦ Get API keys and credentials  
+  ✦ Upload sample covers to Google Drive
+  ✦ Run the system and verify results
+  ✦ Record the Loom video
+  ✦ UNDERSTAND the code (ask me to explain anything!)
+
+
+================================================================================
+END OF TIMELINE
+================================================================================

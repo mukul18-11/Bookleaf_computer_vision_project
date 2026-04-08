@@ -1,0 +1,297 @@
+================================================================================
+  WHAT YOU NEED TO LEARN BEFORE STARTING THIS PROJECT
+  (Prioritized Learning Guide)
+================================================================================
+
+
+================================================================================
+PRIORITY 1: MUST KNOW (Learn these FIRST — ~6-8 hours)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1A. PYTHON BASICS (If you already know Python, skip this)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: Entire project is built in Python.
+
+WHAT TO KNOW:
+  - Variables, functions, loops, conditionals
+  - Working with files (reading images, PDFs)
+  - Installing packages with pip
+  - Using virtual environments (venv)
+  - Working with dictionaries and lists
+  - Error handling (try/except)
+  - f-strings for formatting
+
+LEARN FROM:
+  - You likely already know this from your previous projects
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1B. OPENCV (Computer Vision Library) — THE CORE OF THIS PROJECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: This is how you analyze book cover images. It's the HEART of the project.
+
+WHAT TO KNOW:
+  - Reading/loading images: cv2.imread()
+  - Image dimensions: image.shape (height, width)
+  - Color spaces: BGR to RGB, BGR to Grayscale conversion
+  - Drawing on images: cv2.rectangle(), cv2.putText() (for annotation)
+  - Image cropping: image[y1:y2, x1:x2] (NumPy slicing)
+  - Image resizing: cv2.resize()
+  - DPI/resolution checking
+
+INSTALL: pip install opencv-python
+
+KEY CONCEPTS FOR THIS PROJECT:
+  - You'll load the book cover image
+  - Calculate where the "safe zones" and "badge zone" are in pixels
+  - Convert mm measurements to pixels based on image DPI
+  - Check if text/elements exist in forbidden zones
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1C. OCR — TEXT DETECTION IN IMAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: You need to FIND where text is located on the book cover to check if it
+     overlaps with the badge zone.
+
+TWO MAIN OPTIONS:
+
+  OPTION A: Tesseract OCR (Free, Local)
+    - pytesseract library (Python wrapper for Tesseract)
+    - Can detect text AND its bounding box (position on image)
+    - Install: pip install pytesseract
+    - Also need to install Tesseract itself: brew install tesseract (Mac)
+    - Key function: pytesseract.image_to_data() → gives text + coordinates
+
+  OPTION B: Google Cloud Vision API (Cloud, More Accurate)
+    - Better accuracy but requires Google Cloud account
+    - Can detect text with very precise bounding boxes
+    - Install: pip install google-cloud-vision
+
+  OPTION C: EasyOCR (Simple, Good accuracy)
+    - pip install easyocr
+    - Very easy to use, good for this project
+    - Returns text + bounding boxes
+
+WHAT TO KNOW:
+  - How to get bounding boxes (x, y, width, height) for each text element
+  - How to check if a bounding box overlaps with another region
+  - Intersection/overlap detection (simple rectangle math)
+
+RECOMMENDED: Start with EasyOCR or pytesseract. They're easiest to set up.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1D. BASIC IMAGE GEOMETRY & COORDINATE MATH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: You need to convert real-world measurements (mm, inches) to pixels
+     and check if rectangles overlap.
+
+WHAT TO KNOW:
+
+  CONVERTING MEASUREMENTS:
+    - 1 inch = 25.4 mm
+    - Cover is 6×8 inches
+    - If image is, say, 1800×2400 pixels → DPI = 1800/6 = 300 DPI
+    - Pixels per mm = DPI / 25.4
+    - So 3mm margin = 3 × (300/25.4) ≈ 35 pixels
+    - 9mm badge zone = 9 × (300/25.4) ≈ 106 pixels from bottom
+
+  OVERLAP DETECTION (Rectangle Intersection):
+    Two rectangles overlap if:
+      rect1.left < rect2.right AND
+      rect1.right > rect2.left AND
+      rect1.top < rect2.bottom AND
+      rect1.bottom > rect2.top
+
+  This is the KEY ALGORITHM for detecting badge overlap!
+
+
+================================================================================
+PRIORITY 2: IMPORTANT (Learn these NEXT — ~4-6 hours)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2A. GOOGLE DRIVE API + WEBHOOKS (For instant upload detection)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: The system needs to INSTANTLY detect when a new book cover is uploaded.
+
+APPROACH: WEBHOOK (Push Notification) — NOT polling!
+  Instead of checking every 30 seconds, Google Drive will TELL your server
+  the moment a new file appears. Like getting a notification vs refreshing.
+
+WHAT TO KNOW:
+  - Google Cloud Console setup (creating a project, enabling Drive API)
+  - Service Account authentication (JSON key file)
+  - Google Drive Push Notifications (watch channels)
+  - Flask/FastAPI basics (your server needs a URL that Google can call)
+  - Downloading files: service.files().get_media()
+  - ngrok (to expose your local server to the internet during development)
+
+HOW IT WORKS:
+  1. You run a Flask web server with an endpoint like /webhook/drive
+  2. You tell Google: "Watch this folder, notify me at this URL"
+  3. When someone uploads a file → Google sends HTTP POST to your /webhook/drive
+  4. Your server receives it → downloads the file → runs analysis
+
+INSTALL: pip install google-api-python-client google-auth flask
+         Also install ngrok for development: brew install ngrok
+
+FOR DEVELOPMENT (SIMPLER ALTERNATIVE):
+  - Use a local folder watcher (watchdog library) for testing
+  - pip install watchdog
+  - Then switch to webhook for the final demo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2B. AIRTABLE API (For database/record keeping)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: Results need to be stored in Airtable (like a spreadsheet database).
+
+WHAT TO KNOW:
+  - Creating an Airtable account and base (database)
+  - Getting your API key / Personal Access Token
+  - Creating records: POST request to Airtable API
+  - Updating records: PATCH request
+  - Reading records: GET request
+
+INSTALL: pip install pyairtable
+
+KEY FIELDS YOU'LL CREATE IN AIRTABLE:
+  - Book ID (ISBN)
+  - Detection Timestamp
+  - Issue Type and Severity
+  - Status (Pass / Review Needed)
+  - Confidence Score (0-100%)
+  - Visual Annotations URL
+  - Correction Instructions
+  - Revision Tracking
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2C. EMAIL SENDING (SMTP or an Email API)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: System must send personalized emails to authors.
+
+OPTIONS:
+
+  OPTION A: Python's built-in smtplib (Free, Simple)
+    - Use Gmail SMTP: smtp.gmail.com, port 587
+    - Need to create an "App Password" in Google account
+    - Can send HTML emails
+    - Good enough for this project!
+
+  OPTION B: SendGrid / Brevo API (More Professional)
+    - Better deliverability
+    - You've used Brevo before (see your previous projects!)
+
+WHAT TO KNOW:
+  - Creating HTML email templates
+  - Sending emails programmatically
+  - Personalizing emails (inserting author name, issue details)
+  - Email formatting with status indicators (✅ ❌)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2D. PDF HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: Book covers can come as PDFs. You need to convert them to images.
+
+INSTALL: pip install pdf2image Pillow
+
+ALSO NEED: brew install poppler (Mac) — required for pdf2image
+
+WHAT TO KNOW:
+  - Converting PDF page to image: convert_from_path()
+  - Setting DPI for conversion (300 DPI recommended)
+  - Handling multi-page PDFs (front cover = page 1, back cover = page 2)
+
+
+================================================================================
+PRIORITY 3: NICE TO HAVE (Learn as needed — ~2-3 hours)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3A. TEMPLATE MATCHING (Advanced CV technique)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: To find the exact position of the award badge on the cover.
+
+WHAT TO KNOW:
+  - cv2.matchTemplate() — finds a smaller image inside a bigger image
+  - Useful for locating the award badge precisely
+  - You'd have a template image of the badge and search for it
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3B. IMAGE QUALITY ASSESSMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: Need to check for pixelation and image quality.
+
+WHAT TO KNOW:
+  - Checking image resolution/DPI
+  - Laplacian variance for blur detection
+  - Minimum resolution thresholds
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3C. CONTOUR DETECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY: Can help detect the badge area, text blocks, and cover elements.
+
+WHAT TO KNOW:
+  - cv2.findContours() — finds shapes/boundaries in images
+  - cv2.boundingRect() — gets the rectangle around a shape
+  - Useful for finding the badge shape at the bottom
+
+
+================================================================================
+SUMMARY: YOUR LEARNING STACK
+================================================================================
+
+LANGUAGE:       Python 3.x
+CV LIBRARY:     OpenCV (cv2)
+TEXT DETECTION:  EasyOCR or Tesseract (pytesseract)
+PDF HANDLING:   pdf2image + Pillow
+FILE TRIGGER:   Google Drive Webhooks (push notifications) + Flask
+DATABASE:       Airtable API (pyairtable)
+EMAIL:          smtplib (built-in) or Brevo API
+IMAGE MATH:     NumPy (comes with OpenCV)
+
+TOTAL PACKAGES TO INSTALL:
+  pip install opencv-python easyocr pdf2image Pillow pyairtable 
+  pip install google-api-python-client google-auth flask
+  pip install numpy watchdog
+
+SYSTEM REQUIREMENTS:
+  brew install tesseract   (if using Tesseract)
+  brew install poppler     (for PDF conversion)
+
+
+================================================================================
+LEARNING RESOURCES (Quick ones — you don't have time for long courses)
+================================================================================
+
+1. OpenCV Basics:
+   → YouTube: "OpenCV Python Tutorial for Beginners" (just watch first 4-5 vids)
+   → Docs: https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
+
+2. EasyOCR:
+   → GitHub: https://github.com/JaidedAI/EasyOCR (read the README, that's enough)
+
+3. Airtable API:
+   → Docs: https://airtable.com/developers/web/api/introduction
+   → pyairtable: https://pyairtable.readthedocs.io/
+
+4. Google Drive API:
+   → Quickstart: https://developers.google.com/drive/api/quickstart/python
+
+5. The YouTube video they mentioned:
+   → https://www.youtube.com/watch?v=0DeuNeoIG4k (Timestamps at 4:20 for safe areas)
+
+================================================================================
+END OF LEARNING GUIDE
+================================================================================

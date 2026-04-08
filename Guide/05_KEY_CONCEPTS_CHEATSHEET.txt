@@ -1,0 +1,298 @@
+================================================================================
+  KEY CONCEPTS EXPLAINED — CHEAT SHEET
+  (Quick reference for the technical concepts in this project)
+================================================================================
+
+
+================================================================================
+CONCEPT 1: WHAT IS COMPUTER VISION (CV)?
+================================================================================
+
+Computer Vision = Teaching computers to "see" and understand images.
+
+In this project, you're NOT building AI from scratch!
+You're using EXISTING libraries (OpenCV, EasyOCR) that already know how to:
+  - Find text in images
+  - Detect shapes and boundaries
+  - Measure distances between elements
+
+YOUR JOB: Tell the computer WHERE to look and WHAT rules to check.
+
+Think of it like this:
+  - The library is the "eyes" (it can see the image)
+  - Your code is the "brain" (it decides if what it sees is good or bad)
+
+
+================================================================================
+CONCEPT 2: WHAT IS OCR?
+================================================================================
+
+OCR = Optical Character Recognition
+= Converting images of text INTO actual text data
+
+Example:
+  Input:  A photo of a book cover with "John Smith" written on it
+  Output: The string "John Smith" + the position (x=200, y=500, w=300, h=50)
+
+WHY YOU NEED IT:
+  You need to know WHERE the author's name is on the cover.
+  OCR gives you the text AND its location (bounding box).
+
+BOUNDING BOX = A rectangle around detected text
+  Defined by: (x, y, width, height)
+  - x, y = top-left corner coordinates
+  - width, height = size of the rectangle
+
+
+================================================================================
+CONCEPT 3: IMAGE COORDINATE SYSTEM
+================================================================================
+
+Images use a coordinate system that starts from the TOP-LEFT corner:
+
+  (0,0) ─────────────────── (width, 0)
+    │                           │
+    │     IMAGE CONTENT         │
+    │                           │
+    │                           │
+  (0, height) ───────────── (width, height)
+
+IMPORTANT: Y increases DOWNWARD (not upward like in math)!
+
+So the BOTTOM of the image has the LARGEST y value.
+The badge zone at the bottom = region where y is close to the maximum.
+
+
+================================================================================
+CONCEPT 4: CONVERTING REAL MEASUREMENTS TO PIXELS
+================================================================================
+
+The cover is 6×8 inches. But images are measured in pixels.
+You need to convert between the two.
+
+DPI (Dots Per Inch) = How many pixels per inch
+
+FORMULA:
+  pixels = real_measurement_in_inches × DPI
+  pixels = real_measurement_in_mm × (DPI / 25.4)
+
+EXAMPLE (assuming 300 DPI image):
+  Image size: 6 × 300 = 1800 pixels wide
+              8 × 300 = 2400 pixels tall
+
+  3mm side margin = 3 × (300 / 25.4) = 35.4 ≈ 35 pixels
+  6mm bottom margin = 6 × (300 / 25.4) = 70.9 ≈ 71 pixels  
+  9mm badge zone = 9 × (300 / 25.4) = 106.3 ≈ 106 pixels
+
+HOW TO FIND IMAGE DPI:
+  If it's a PNG with EXIF data: use Pillow (PIL) to read DPI
+  If DPI is unknown: Calculate from known cover size
+    DPI = image_width_in_pixels / 6  (since cover is 6 inches wide)
+
+
+================================================================================
+CONCEPT 5: OVERLAP DETECTION (RECTANGLE INTERSECTION)
+================================================================================
+
+This is THE key algorithm. It checks if two rectangles overlap.
+
+RECTANGLE A: A text bounding box (from OCR)
+  a_left, a_top, a_right, a_bottom
+
+RECTANGLE B: The badge zone  
+  b_left = 0  (left edge of cover)
+  b_top = image_height - badge_zone_pixels
+  b_right = image_width  (right edge of cover)
+  b_bottom = image_height
+
+OVERLAP EXISTS if ALL of these are true:
+  a_left   < b_right
+  a_right  > b_left
+  a_top    < b_bottom
+  a_bottom > b_top
+
+In Python:
+  def rectangles_overlap(a, b):
+      return (a['left'] < b['right'] and
+              a['right'] > b['left'] and
+              a['top'] < b['bottom'] and
+              a['bottom'] > b['top'])
+
+CALCULATING OVERLAP AMOUNT:
+  overlap_width = min(a_right, b_right) - max(a_left, b_left)
+  overlap_height = min(a_bottom, b_bottom) - max(a_top, b_top)
+  overlap_area = max(0, overlap_width) * max(0, overlap_height)
+
+
+================================================================================
+CONCEPT 6: CONFIDENCE SCORE
+================================================================================
+
+Confidence Score = How sure the AI is about its detection (0-100%)
+
+IT'S NOT MAGIC — You calculate it based on:
+
+  1. OCR confidence: EasyOCR gives a confidence per text detection (0.0-1.0)
+  2. Overlap amount: How much a text box overlaps with the badge zone
+  3. Image quality: Resolution, clarity
+
+Example scoring logic:
+  - OCR detected text with 95% confidence → high trust in detection
+  - Overlap is 80% of badge zone → very clear violation → 98% confidence
+  - Overlap is 5% of badge zone → might be borderline → 60% confidence
+  
+  If confidence < 85% → Status = "REVIEW NEEDED" (let human decide)
+  If confidence >= 85% and issues found → Status = "REVIEW NEEDED"
+  If confidence >= 85% and no issues → Status = "PASS"
+
+
+================================================================================
+CONCEPT 7: SAFE AREA vs BADGE ZONE vs MARGINS
+================================================================================
+
+  ┌─────────────────────────────────┐
+  │ 3mm margin (top)                │
+  │  ┌───────────────────────────┐  │ 3mm margin
+  │  │                           │  │ (sides)
+  │  │     SAFE AREA             │  │
+  │  │     (Text should be       │  │
+  │  │      within this area)    │  │
+  │  │                           │  │
+  │  │                           │  │
+  │  │                           │  │
+  │  │                           │  │
+  │  ├───────────────────────────┤  │
+  │  │                           │  │ ← 6mm from bottom
+  │  │  BADGE ZONE (9mm tall)    │  │
+  │  │  "Winner of 21st Century  │  │
+  │  │   Emily Dickinson Award"  │  │
+  │  │                           │  │
+  │  └───────────────────────────┘  │
+  └─────────────────────────────────┘
+
+  SAFE AREA: Where text SHOULD be. Inside the margins but ABOVE the badge zone.
+  BADGE ZONE: Bottom 9mm. RESERVED for the award badge. NO text here!
+  MARGINS: 3mm from sides, 3mm from top. Text must stay inside.
+
+
+================================================================================
+CONCEPT 8: ISBN (International Standard Book Number)
+================================================================================
+
+ISBN = A 13-digit unique identifier for every book
+Example: 978-0-13-468599-1 (usually displayed with hyphens)
+In filenames: 9780134685991 (no hyphens, 13 digits)
+
+File naming convention: ISBN_text.extension
+Example: 9780134685991_text.pdf
+
+You extract the ISBN from the filename:
+  filename = "9780134685991_text.pdf"
+  isbn = filename.split("_")[0]  # "9780134685991"
+
+The ISBN is used to:
+  - Look up which author this book belongs to
+  - Find the author's email address
+  - Create the Airtable record
+
+
+================================================================================
+CONCEPT 9: WHAT IS AIRTABLE?
+================================================================================
+
+Airtable = A cloud spreadsheet/database hybrid (like Google Sheets + database)
+
+You'll create a TABLE with COLUMNS (called "fields"):
+  - Book ID (ISBN) — Text field
+  - Detection Timestamp — Date/time field
+  - Issue Type — Single/Multi select (e.g., "Badge Overlap", "Margin Violation")
+  - Severity — Single select ("Critical", "Warning", "Info")
+  - Status — Single select ("Pass", "Review Needed")
+  - Confidence Score — Number (0-100)
+  - Correction Instructions — Long text
+  - Visual Annotations URL — URL (link to annotated image)
+  - Revision Tracking — Number (how many times resubmitted)
+
+You interact with Airtable via their REST API:
+  - Each "base" has a unique ID
+  - Each "table" in the base has a name
+  - You use an API key to authenticate
+  - You send HTTP requests to create/read/update records
+
+
+================================================================================
+CONCEPT 10: THE ANNOTATED IMAGE
+================================================================================
+
+An "annotated image" = The original book cover with visual markings drawn on it
+showing what the AI detected.
+
+Example annotations:
+  - GREEN rectangle around safe area
+  - RED rectangle around badge zone
+  - BLUE rectangles around detected text
+  - RED highlight where text overlaps with badge zone
+  - Text labels showing issue descriptions
+
+You create this using OpenCV drawing functions:
+  cv2.rectangle(image, (x1,y1), (x2,y2), color, thickness)
+  cv2.putText(image, "OVERLAP DETECTED!", (x,y), font, size, color)
+
+This annotated image is SAVED and its URL goes into Airtable so the reviewer
+can see visually what the AI found.
+
+
+================================================================================
+CONCEPT 11: WHAT IS "BACK COVER TEXT ALIGNMENT"?
+================================================================================
+
+Books have a BACK COVER too (the second page of the PDF or a separate image).
+
+Back cover typically has:
+  - Book description/blurb
+  - Author bio
+  - Barcode
+  - Publisher info
+
+"Alignment check" means verifying:
+  - Text is centered or left-aligned consistently
+  - Text doesn't go outside the margins
+  - Elements are properly spaced
+
+This is a SECONDARY check — badge overlap on front cover is the PRIMARY focus.
+
+
+================================================================================
+QUICK REFERENCE: PYTHON CODE SNIPPETS
+================================================================================
+
+# Loading an image
+import cv2
+image = cv2.imread("cover.png")
+height, width = image.shape[:2]
+
+# Detecting text with EasyOCR
+import easyocr
+reader = easyocr.Reader(['en'])
+results = reader.readtext("cover.png")
+# results = [([bbox_points], text, confidence), ...]
+
+# Converting mm to pixels
+def mm_to_pixels(mm, dpi):
+    return int(mm * (dpi / 25.4))
+
+# Checking overlap
+def check_overlap(text_box, badge_zone):
+    return (text_box['left'] < badge_zone['right'] and
+            text_box['right'] > badge_zone['left'] and
+            text_box['top'] < badge_zone['bottom'] and
+            text_box['bottom'] > badge_zone['top'])
+
+# Drawing on image
+cv2.rectangle(image, (x1,y1), (x2,y2), (0,0,255), 2)  # Red box
+cv2.imwrite("annotated_cover.png", image)
+
+
+================================================================================
+END OF CONCEPTS CHEAT SHEET
+================================================================================

@@ -1,0 +1,197 @@
+================================================================================
+  BOOKLEAF PUBLISHING - AUTOMATED BOOK COVER VALIDATION SYSTEM
+  COMPLETE PROJECT EXPLANATION (IN PLAIN ENGLISH)
+================================================================================
+
+LAST UPDATED: April 6, 2026
+YOUR DEADLINE: ~72 hours from when you received the assignment
+
+================================================================================
+SECTION 1: WHAT IS THIS PROJECT ABOUT? (THE BIG PICTURE)
+================================================================================
+
+BookLeaf Publishing is a publishing company (India | USA | UK).
+They have a product called "Bestseller Breakthrough Package."
+Every month, they process 100-150 book covers for authors.
+
+THE PROBLEM:
+  Right now, humans manually check every book cover for layout mistakes.
+  This is slow, expensive, and error-prone.
+
+WHAT THEY WANT FROM YOU:
+  Build an AUTOMATED SYSTEM that:
+  1. Takes a book cover image as input
+  2. Uses Computer Vision (AI) to detect layout problems
+  3. Reports issues automatically
+  4. Sends emails to authors about what to fix
+
+THE MOST CRITICAL ISSUE TO DETECT:
+  → Author names OVERLAPPING with the "21st Century Emily Dickinson Award" badge
+  → This badge sits at the BOTTOM of the front cover
+  → If the author's name is placed too close to or on top of this badge, 
+    that's a CRITICAL ERROR
+
+Think of it like this:
+  Imagine a book cover is like a poster. There's a special award sticker at the
+  bottom. If someone writes their name too low on the poster, it covers the 
+  sticker. Your AI system needs to detect this automatically.
+
+
+================================================================================
+SECTION 2: WHAT DOES THE SYSTEM DO END-TO-END? (THE FULL WORKFLOW)
+================================================================================
+
+Here's the entire flow, step by step:
+
+STEP 1: UPLOAD
+  → Someone uploads a book cover (PDF or PNG) to a Google Drive folder
+  → File is named like: 1234567890123_text.pdf (ISBN number + _text + extension)
+
+STEP 2: YOUR SYSTEM GETS NOTIFIED INSTANTLY (WEBHOOK)
+  → Google Drive sends a PUSH NOTIFICATION to your server the moment a file is uploaded
+  → No need to keep checking — Google tells YOUR system "hey, new file just arrived!"
+  → Your system (a Flask/FastAPI web server) receives this notification and starts processing
+  → Think of it like getting a WhatsApp notification vs checking your phone every 30 seconds
+
+STEP 3: COMPUTER VISION ANALYSIS
+  → Your code analyzes the book cover image
+  → It checks for these issues:
+
+  CRITICAL CHECKS (95% accuracy needed):
+    a) Does any text overlap with the award badge area? (bottom 9mm of cover)
+    b) Is the author name positioned in a "conflict zone" with the badge?
+
+  ADDITIONAL CHECKS:
+    c) Is text too close to the edges? (must be 3mm from sides, 6mm from bottom)
+    d) Is back cover text properly aligned?
+    e) Is the image resolution good enough? (no pixelation)
+
+STEP 4: CLASSIFICATION
+  Based on the analysis, your system gives one of TWO statuses:
+  
+  → PASS: Everything looks good, no issues found
+  → REVIEW NEEDED: Something might be wrong, needs human review
+    (Reasons: low AI confidence, minor spacing issues, potential overlaps)
+
+STEP 5: UPDATE AIRTABLE DATABASE
+  → Your system creates/updates a record in Airtable with:
+    - Book ID (ISBN)
+    - What issues were found
+    - How confident the AI is (0-100%)
+    - Correction instructions
+    - Status (Pass/Review Needed)
+
+STEP 6: SEND EMAIL TO AUTHOR
+  → If PASS: Send a confirmation email ("Your cover looks great!")
+  → If REVIEW NEEDED: Send a detailed email explaining:
+    - What specific issues were found
+    - Step-by-step instructions to fix them
+    - When to resubmit
+  → The email is personalized using the author's name (looked up via ISBN)
+
+
+================================================================================
+SECTION 3: THE BOOK COVER RULES (WHAT MAKES A COVER "GOOD" OR "BAD")
+================================================================================
+
+COVER DIMENSIONS:
+  → Front cover: 6 inches wide × 8 inches tall
+
+SAFE AREA MARGINS (imagine invisible borders inside the cover):
+  → 3mm from left edge
+  → 3mm from right edge
+  → 3mm from top edge  
+  → 6mm from bottom edge
+  → ALL text and important elements must be INSIDE these margins
+
+THE AWARD BADGE ZONE:
+  → Bottom 9mm of the front cover is RESERVED
+  → This is where the "Winner of 21st Century Emily Dickinson Award" emblem goes
+  → NOTHING should overlap this area — especially not the author's name
+
+AUTHOR NAME RULES:
+  → Can be placed ANYWHERE on the front cover
+  → BUT must stay within the safe area margins
+  → AND absolutely CANNOT overlap the award badge zone at the bottom
+
+QUALITY STANDARDS:
+  → Cover must be clear (no pixelation/blurriness)
+  → Text must be legible (readable) and properly aligned
+  → All elements must respect the safe margins
+
+
+================================================================================
+SECTION 4: WHAT "GOOD" AND "BAD" COVERS LOOK LIKE
+================================================================================
+
+GOOD COVER EXAMPLE:
+  ✅ Award badge properly placed at the bottom
+  ✅ Author name positioned ABOVE the badge area (not overlapping)
+  ✅ Clear text with proper spacing
+  ✅ All elements within safe margins
+
+BAD COVER EXAMPLE:
+  ❌ Text "For those who feel more than they can express" overlaps with award badge
+  ❌ Spacing violations present
+  ❌ Author name positioning conflicts with badge placement
+
+
+================================================================================
+SECTION 5: WHAT YOU NEED TO DELIVER
+================================================================================
+
+1. FULLY FUNCTIONAL WORKFLOW SYSTEM:
+   - Automated detection pipeline (the CV/AI code)
+   - Google Drive integration (webhook: auto-triggered on new uploads)
+   - Airtable database connection (storing results)
+   - Email automation setup (sending notifications)
+
+2. DOCUMENTATION:
+   - System architecture overview
+   - API/integration details
+   - Configuration instructions
+   - Testing methodology and results
+
+3. TESTING & VALIDATION:
+   - Demo with the sample covers they gave you
+   - Accuracy metrics report (must show 90%+ accuracy)
+   - Edge case handling examples
+
+4. SUBMISSION ITEMS:
+   - Working demo of complete workflow
+   - Source code with clear documentation
+   - Test results showing 90%+ accuracy
+   - Sample Airtable records created by system
+   - Example email notifications
+   - Brief video walkthrough on Loom
+
+
+================================================================================
+SECTION 6: HOW YOU'LL BE EVALUATED
+================================================================================
+
+They will judge you on:
+  1. Detection accuracy (especially badge overlap — this is #1 priority)
+  2. Automation completeness (does the full pipeline work end-to-end?)
+  3. System reliability and error handling
+  4. Code quality and documentation
+  5. User interface clarity
+  6. Email communication effectiveness
+  7. Integration robustness (does Google Drive + Airtable + Email all work?)
+
+
+================================================================================
+SECTION 7: KEY NUMBERS TO REMEMBER
+================================================================================
+
+  → 90%+ overall processing accuracy
+  → 95% accuracy for critical badge overlap detection
+  → 80% reduction in manual review time
+  → 100-150 covers per month capacity
+  → 6×8 inch front cover dimensions
+  → 3mm side margins, 6mm bottom margin, 9mm badge zone
+  → ISBN = 13-digit book identifier
+
+================================================================================
+END OF PROJECT OVERVIEW
+================================================================================

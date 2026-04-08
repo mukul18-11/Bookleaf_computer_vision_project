@@ -1,0 +1,205 @@
+================================================================================
+  TECHNOLOGY STACK & SYSTEM ARCHITECTURE
+================================================================================
+
+
+================================================================================
+SECTION 1: COMPLETE TECH STACK
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  COMPONENT              │  TECHNOLOGY           │  PURPOSE          │
+├─────────────────────────┼───────────────────────┼───────────────────┤
+│  Language               │  Python 3.10+         │  Everything       │
+│  Computer Vision        │  OpenCV               │  Image analysis   │
+│  Text Detection (OCR)   │  EasyOCR/Tesseract    │  Find text on img │
+│  PDF Processing         │  pdf2image + Pillow   │  PDF → Image      │
+│  File Trigger          │  Drive Webhook+Flask  │  Instant detection│
+│  Database               │  Airtable API         │  Store results    │
+│  Email                  │  smtplib / Brevo      │  Send emails      │
+│  Math/Arrays            │  NumPy                │  Image operations │
+│  Config Management      │  python-dotenv        │  API keys safety  │
+│  Logging                │  Python logging       │  Debug/tracking   │
+└─────────────────────────┴───────────────────────┴───────────────────┘
+
+
+================================================================================
+SECTION 2: SYSTEM ARCHITECTURE DIAGRAM (How everything connects)
+================================================================================
+
+                    ┌─────────────────────────┐
+                    │    GOOGLE DRIVE FOLDER   │
+                    │  (Book covers uploaded   │
+                    │   as ISBN_text.pdf/png)  │
+                    └────────────┬────────────┘
+                                 │
+                                 │ 1. New file uploaded → Google sends
+                                 │    WEBHOOK notification instantly
+                                 ▼
+                    ┌─────────────────────────┐
+                    │   FLASK WEB SERVER       │
+                    │  (Your server receives   │
+                    │   the push notification  │
+                    │   from Google Drive)     │
+                    └────────────┬────────────┘
+                                 │
+                                 │ 2. Server downloads the new file,
+                                 │    parses ISBN from filename
+                                 ▼
+                    ┌─────────────────────────┐
+                    │   PREPROCESSOR MODULE    │
+                    │  - Convert PDF → Image   │
+                    │  - Check file format     │
+                    │  - Extract ISBN          │
+                    │  - Determine DPI         │
+                    │  - Separate front/back   │
+                    └────────────┬────────────┘
+                                 │
+                                 │ 3. Clean image ready for analysis
+                                 ▼
+              ┌──────────────────────────────────────┐
+              │      COMPUTER VISION ENGINE          │
+              │                                      │
+              │  ┌────────────────────────────────┐  │
+              │  │  a) TEXT DETECTION (OCR)       │  │
+              │  │  → Find all text + positions   │  │
+              │  │  → Identify author name        │  │
+              │  └────────────────────────────────┘  │
+              │                                      │
+              │  ┌────────────────────────────────┐  │
+              │  │  b) ZONE MAPPING               │  │
+              │  │  → Calculate safe area margins │  │
+              │  │  → Define badge zone (bottom)  │  │
+              │  │  → Map all regions in pixels   │  │
+              │  └────────────────────────────────┘  │
+              │                                      │
+              │  ┌────────────────────────────────┐  │
+              │  │  c) OVERLAP DETECTION          │  │
+              │  │  → Check text vs badge zone    │  │
+              │  │  → Check text vs safe margins  │  │
+              │  │  → Calculate overlap amount     │  │
+              │  └────────────────────────────────┘  │
+              │                                      │
+              │  ┌────────────────────────────────┐  │
+              │  │  d) QUALITY ASSESSMENT         │  │
+              │  │  → Resolution check            │  │
+              │  │  → Blur/pixelation detection   │  │
+              │  │  → Alignment check             │  │
+              │  └────────────────────────────────┘  │
+              │                                      │
+              │  OUTPUT: Issues list + confidence    │
+              └──────────────────┬───────────────────┘
+                                 │
+                                 │ 4. Analysis results
+                                 ▼
+                    ┌─────────────────────────┐
+                    │   CLASSIFICATION MODULE  │
+                    │                          │
+                    │  If no issues:           │
+                    │    → Status = PASS       │
+                    │                          │
+                    │  If issues found:        │
+                    │    → Status = REVIEW     │
+                    │      NEEDED              │
+                    │                          │
+                    │  Calculate confidence    │
+                    │  score (0-100%)          │
+                    └────────────┬────────────┘
+                                 │
+                          ┌──────┴──────┐
+                          │             │
+                          ▼             ▼
+              ┌───────────────┐  ┌───────────────┐
+              │   AIRTABLE    │  │   EMAIL       │
+              │   MODULE      │  │   MODULE      │
+              │               │  │               │
+              │  Create/Update│  │  Look up      │
+              │  record with: │  │  author email │
+              │  - ISBN       │  │  by ISBN      │
+              │  - Status     │  │               │
+              │  - Issues     │  │  Send:        │
+              │  - Confidence │  │  - PASS email │
+              │  - Timestamp  │  │    OR         │
+              │  - Correction │  │  - REVIEW     │
+              │    details    │  │    email with │
+              │               │  │    details    │
+              └───────────────┘  └───────────────┘
+
+
+================================================================================
+SECTION 3: FOLDER STRUCTURE (How to organize your code)
+================================================================================
+
+Bookleaf_computer_vision_project/
+│
+├── main.py                    # Entry point — runs the full pipeline
+├── config.py                  # Configuration (API keys, thresholds, paths)
+├── .env                       # Secret API keys (never commit!)
+├── requirements.txt           # All Python dependencies
+├── README.md                  # Documentation
+│
+├── modules/                   # Core modules
+│   ├── __init__.py
+│   ├── webhook_server.py     # Flask server that receives Google Drive notifications
+│   ├── preprocessor.py        # PDF→Image, ISBN extraction
+│   ├── cv_engine.py           # Computer vision analysis (THE BIG ONE)
+│   ├── text_detector.py       # OCR text detection
+│   ├── zone_mapper.py         # Calculate safe zones, badge zones
+│   ├── overlap_checker.py     # Check if text overlaps with zones
+│   ├── quality_checker.py     # Image quality assessment
+│   ├── classifier.py          # PASS / REVIEW NEEDED decision
+│   ├── airtable_client.py     # Airtable API integration
+│   └── email_sender.py        # Email notification system
+│
+├── templates/                 # Email templates
+│   ├── pass_email.html        # Template for PASS notification
+│   └── review_email.html      # Template for REVIEW NEEDED notification
+│
+├── sample_covers/             # The 9 sample book covers they gave you
+│   ├── front/                 # Front cover images
+│   └── back/                  # Back cover images
+│
+├── tests/                     # Test scripts
+│   ├── test_detection.py      # Test the CV engine
+│   ├── test_overlap.py        # Test overlap detection
+│   └── test_pipeline.py       # Test full pipeline
+│
+├── output/                    # Analysis results
+│   ├── annotated/             # Images with annotations drawn on them
+│   └── reports/               # JSON/text reports
+│
+└── docs/                      # Documentation
+    ├── architecture.md
+    ├── api_integration.md
+    └── testing_results.md
+
+
+================================================================================
+SECTION 4: KEY CONFIGURATION VALUES
+================================================================================
+
+# Cover Specifications (convert to pixels based on actual image DPI)
+COVER_WIDTH_INCHES = 6
+COVER_HEIGHT_INCHES = 8
+
+# Safe Area Margins
+MARGIN_SIDES_MM = 3        # 3mm from left and right edges  
+MARGIN_TOP_MM = 3          # 3mm from top
+MARGIN_BOTTOM_MM = 6       # 6mm from bottom
+
+# Award Badge Reserved Zone
+BADGE_ZONE_HEIGHT_MM = 9   # Bottom 9mm is reserved for badge
+
+# Detection Thresholds
+CRITICAL_CONFIDENCE_THRESHOLD = 0.95   # 95% for critical detections
+OVERALL_CONFIDENCE_THRESHOLD = 0.90     # 90% overall accuracy
+OVERLAP_TOLERANCE_PIXELS = 5           # Small tolerance for edge cases
+
+# Quality Thresholds
+MIN_DPI = 150                          # Minimum acceptable DPI
+BLUR_THRESHOLD = 100                   # Laplacian variance threshold
+
+
+================================================================================
+END OF TECH STACK & ARCHITECTURE
+================================================================================

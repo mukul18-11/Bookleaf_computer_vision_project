@@ -1,0 +1,74 @@
+Question 1: "Where does the user upload?"
+You have two options — and you DON'T need a fancy frontend:
+
+Option A: Shared Google Drive Folder (What the assignment says)
+You create a Google Drive folder called "BookLeaf Uploads"
+                    ⬇️
+You SHARE that folder link with the BookLeaf staff
+                    ⬇️
+They open the link and drag-drop the book cover into it
+                    ⬇️
+Google Drive INSTANTLY notifies your server via webhook (push notification)
+There's no frontend. Google Drive IS the upload interface. The staff already knows how to use Google Drive — they just drop files into a shared folder.
+
+Option B: Build a simple web upload page (BONUS, optional)
+A simple webpage with an "Upload Cover" button. But the assignment doesn't require this. They specifically said "Google Drive folder" as the trigger.
+
+Question 2: "What is ISBN_text.pdf?"
+ISBN = a book's unique ID number (like an Aadhaar number but for books). Every book in the world has one — it's 13 digits.
+
+The file naming rule they want is:
+
+9780134685991_text.pdf
+  ─────────────  ────  ───
+       │          │     │
+       │          │     └── File format (pdf or png)
+       │          │
+       │          └── Literally the word "text" (just a label)
+       │
+       └── The ISBN number (identifies WHICH book this is)
+WHY this naming matters:
+Your script reads the filename to know which book it's dealing with:
+
+python
+filename = "9780134685991_text.pdf"
+isbn = filename.split("_")[0]    # → "9780134685991"
+# Now you can look up:
+# - Who is the author of book 9780134685991? → "Raj Jain"
+# - What is their email? → "raj@email.com"
+# - Has this book been submitted before? → Check Airtable
+Without the ISBN in the filename, your system wouldn't know whose book cover it's analyzing and who to email the results to.
+
+Question 3: "How does my system actually GET the file?"
+Here's the real-world flow, super simply:
+
+BOOKLEAF STAFF                         YOUR SYSTEM
+─────────────                         ────────────
+1. Staff gets a book cover             
+   from an author                      
+2. Staff renames the file              
+   to: 9780134685991_text.pdf         
+3. Staff opens the shared             
+   Google Drive folder and             
+   drags the file in                  
+                                       4. Google Drive INSTANTLY sends a
+                                          webhook notification to your
+                                          Flask server (no checking needed)
+                                       
+                                       5. Your server receives: "New file:
+                                          9780134685991_text.pdf"
+                                       
+                                       6. Your server DOWNLOADS the file
+                                          automatically
+                                       
+                                       7. Your server ANALYZES it
+                                          (computer vision magic)
+                                       
+                                       8. Your server saves results
+                                          to Airtable + sends email
+TL;DR (Summary):
+Your Confusion	The Answer
+Do I need a frontend?	No. Google Drive IS the upload interface
+Where do users upload?	To a shared Google Drive folder you create
+What is ISBN_text.pdf?	A naming rule: BookID_text.pdf so your code knows which book it is
+How does my system get the file?	Google Drive sends a webhook (instant notification) to your Flask server when a new file is uploaded
