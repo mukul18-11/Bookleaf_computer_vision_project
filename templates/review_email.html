@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #e65100, #f57c00); padding: 30px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header .status-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 20px; margin-top: 12px; font-size: 18px; }
+        .body { padding: 30px; color: #333; line-height: 1.6; }
+        .body h2 { color: #e65100; margin-top: 25px; }
+        .details-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+        .details-box p { margin: 5px 0; }
+        .issue-card { background: #fbe9e7; border: 1px solid #ffccbc; padding: 15px; margin: 10px 0; border-radius: 6px; }
+        .issue-card .severity { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; color: white; }
+        .severity-critical { background: #d32f2f; }
+        .severity-warning { background: #f57c00; }
+        .correction-box { background: #e8f5e9; border-left: 4px solid #43a047; padding: 12px 16px; margin: 8px 0; border-radius: 4px; }
+        .steps-box { background: #e3f2fd; padding: 20px; border-radius: 6px; margin: 15px 0; }
+        .steps-box ol { margin: 10px 0; padding-left: 20px; }
+        .steps-box li { margin: 8px 0; }
+        .footer { background: #fafafa; padding: 20px 30px; font-size: 13px; color: #888; border-top: 1px solid #eee; }
+        .footer a { color: #e65100; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BookLeaf Cover Validation</h1>
+            <div class="status-badge">&#9888; REVISION NEEDED</div>
+        </div>
+
+        <div class="body">
+            <p>Dear <strong>{{ author_name }}</strong>,</p>
+
+            <p>Your book cover has been reviewed by our automated validation system. We found some issues that need your attention before we can proceed.</p>
+
+            <div class="details-box">
+                <p><strong>Book ISBN:</strong> {{ isbn }}</p>
+                <p><strong>Status:</strong> REVIEW NEEDED</p>
+                <p><strong>Confidence Score:</strong> {{ confidence }}%</p>
+                <p><strong>Issues Found:</strong> {{ issue_count }}</p>
+                <p><strong>Reviewed On:</strong> {{ timestamp }}</p>
+            </div>
+
+            <h2>Issues Detected</h2>
+
+            {% for issue in issues %}
+            <div class="issue-card">
+                <span class="severity severity-{{ issue.severity | lower }}">{{ issue.severity }}</span>
+                <p><strong>{{ issue.type | replace('_', ' ') }}</strong></p>
+                <p>{{ issue.description }}</p>
+                {% if issue.correction %}
+                <div class="correction-box">
+                    <strong>How to fix:</strong> {{ issue.correction }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <h2>Next Steps</h2>
+            <div class="steps-box">
+                <ol>
+                    <li>Review the issues listed above carefully</li>
+                    <li>Open your cover design file in your editing software</li>
+                    <li>Make the corrections as described for each issue</li>
+                    <li>Ensure the author name stays above the bottom 9mm badge zone</li>
+                    <li>Keep all text within 3mm of side margins and 6mm of the bottom margin</li>
+                    <li>Re-export and upload the corrected cover to Google Drive</li>
+                </ol>
+            </div>
+
+            <p><strong>Expected resubmission:</strong> Please upload your corrected cover within <strong>48 hours</strong>.</p>
+
+            <p>If you have any questions about the issues found, please don't hesitate to reach out to our support team.</p>
+
+            <p>Best regards,<br>
+            <strong>BookLeaf Quality Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message from BookLeaf Publishing's cover validation system.</p>
+            <p>Questions? Contact us at <a href="mailto:support@bookleafpublishing.com">support@bookleafpublishing.com</a></p>
+            <p>BookLeaf Publishing | India | USA | UK</p>
+        </div>
+    </div>
+</body>
+</html>

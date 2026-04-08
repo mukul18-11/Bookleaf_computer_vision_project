@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2e7d32, #43a047); padding: 30px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header .status-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 20px; margin-top: 12px; font-size: 18px; }
+        .body { padding: 30px; color: #333; line-height: 1.6; }
+        .body h2 { color: #2e7d32; margin-top: 25px; }
+        .details-box { background: #f1f8e9; border-left: 4px solid #2e7d32; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+        .details-box p { margin: 5px 0; }
+        .footer { background: #fafafa; padding: 20px 30px; font-size: 13px; color: #888; border-top: 1px solid #eee; }
+        .footer a { color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BookLeaf Cover Validation</h1>
+            <div class="status-badge">&#10004; APPROVED</div>
+        </div>
+
+        <div class="body">
+            <p>Dear <strong>{{ author_name }}</strong>,</p>
+
+            <p>Great news! Your book cover has been reviewed by our automated validation system and has <strong>passed all checks</strong>.</p>
+
+            <div class="details-box">
+                <p><strong>Book ISBN:</strong> {{ isbn }}</p>
+                <p><strong>Status:</strong> PASS</p>
+                <p><strong>Confidence Score:</strong> {{ confidence }}%</p>
+                <p><strong>Reviewed On:</strong> {{ timestamp }}</p>
+            </div>
+
+            <h2>What Was Checked</h2>
+            <ul>
+                <li>Award badge zone clearance (bottom 9mm)</li>
+                <li>Text positioning within safe margins</li>
+                <li>Author name placement</li>
+                <li>Image resolution and clarity</li>
+            </ul>
+
+            <p>No further action is needed from your side. Your cover is ready for the next stage of the publishing process.</p>
+
+            <p>Thank you for choosing BookLeaf Publishing!</p>
+
+            <p>Best regards,<br>
+            <strong>BookLeaf Quality Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message from BookLeaf Publishing's cover validation system.</p>
+            <p>Questions? Contact us at <a href="mailto:support@bookleafpublishing.com">support@bookleafpublishing.com</a></p>
+            <p>BookLeaf Publishing | India | USA | UK</p>
+        </div>
+    </div>
+</body>
+</html>
