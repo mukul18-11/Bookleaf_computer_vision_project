@@ -70,10 +70,10 @@ def analyze_cover(image_path, isbn="unknown", use_google_vision=True, cover_type
     text_lines = group_text_into_lines(detections)
     logger.info(f"Grouped into {len(text_lines)} text lines")
 
-    # Step 4: Check overlaps - use both individual words and grouped lines
-    # Lines give better context for overlap detection
-    overlap_targets = text_lines if text_lines else detections
-    overlap_result = check_all_overlaps(overlap_targets, zones)
+    # Step 4: Check overlaps.
+    # Badge-zone rules should be checked on word-level detections (strict).
+    # Margin rules are usually cleaner on grouped lines.
+    overlap_result = check_all_overlaps(detections, zones, line_detections=text_lines)
     logger.info(
         f"Overlap check: {overlap_result['badge_overlaps']} badge overlaps, "
         f"{overlap_result['margin_violations']} margin violations"
@@ -101,6 +101,48 @@ def analyze_cover(image_path, isbn="unknown", use_google_vision=True, cover_type
     annotated = draw_zones(annotated, zones)
     annotated = draw_text_detections(annotated, detections)
     annotated = draw_overlaps(annotated, overlap_result["issues"])
+
+    # If we detected a dynamic badge bbox/buffer zone, draw them for clarity.
+    try:
+        badge_bbox = overlap_result.get("badge_bbox")
+        buffer_zone = overlap_result.get("badge_buffer_zone")
+        if badge_bbox:
+            cv2.rectangle(
+                annotated,
+                (badge_bbox["left"], badge_bbox["top"]),
+                (badge_bbox["right"], badge_bbox["bottom"]),
+                (0, 0, 255),  # red
+                2,
+            )
+            cv2.putText(
+                annotated,
+                "BADGE BBOX",
+                (badge_bbox["left"], max(0, badge_bbox["top"] - 8)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                (0, 0, 255),
+                2,
+            )
+        if buffer_zone:
+            cv2.rectangle(
+                annotated,
+                (buffer_zone["left"], buffer_zone["top"]),
+                (buffer_zone["right"], buffer_zone["bottom"]),
+                (0, 165, 255),  # orange
+                2,
+            )
+            cv2.putText(
+                annotated,
+                "BADGE BUFFER (1.5x)",
+                (buffer_zone["left"], max(0, buffer_zone["top"] - 8)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                (0, 165, 255),
+                2,
+            )
+    except Exception:
+        # Never fail the pipeline for annotation-only helpers.
+        pass
 
     # Add status text at the top
     status_text = f"ISBN: {isbn} | Texts: {len(detections)} | Issues: {len(all_issues)}"
@@ -132,6 +174,9 @@ def analyze_cover(image_path, isbn="unknown", use_google_vision=True, cover_type
     result["ocr_method"] = text_result["method"]
     result["text_detected"] = len(detections)
     result["full_text"] = text_result["full_text"][:500]
+    result["badge_zone_hits"] = overlap_result.get("badge_zone_hits", [])
+    result["badge_bbox"] = overlap_result.get("badge_bbox")
+    result["badge_buffer_zone"] = overlap_result.get("badge_buffer_zone")
     result["text_lines"] = [
         {"text": line["text"], "bbox": line["bbox"]}
         for line in text_lines

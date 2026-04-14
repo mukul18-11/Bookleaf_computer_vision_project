@@ -68,6 +68,9 @@ def run_pipeline(file_path, filename=None):
     # Step 2: Handle PDF or image
     preprocessed = preprocess(file_path)
     isbn = preprocessed["isbn"]
+    if isbn == "unknown":
+        # Keep outputs stable and non-overwriting when filenames don't contain an ISBN.
+        isbn = os.path.splitext(os.path.basename(file_path))[0].strip() or "unknown"
 
     results = []
     results_by_type = {}

@@ -53,6 +53,20 @@ def set_pipeline_callback(callback):
 
 def _get_drive_service():
     """Build Google Drive API service using service account credentials."""
+    if not GOOGLE_APPLICATION_CREDENTIALS:
+        raise ValueError(
+            "GOOGLE_APPLICATION_CREDENTIALS is not set. "
+            "Set it to the path of your service-account JSON file in .env."
+        )
+    if not GOOGLE_APPLICATION_CREDENTIALS.lower().endswith(".json"):
+        raise ValueError(
+            "GOOGLE_APPLICATION_CREDENTIALS must be a path to a service-account JSON file "
+            "(it should end with .json)."
+        )
+    if not os.path.exists(GOOGLE_APPLICATION_CREDENTIALS):
+        raise FileNotFoundError(
+            f"Service-account JSON not found at GOOGLE_APPLICATION_CREDENTIALS: {GOOGLE_APPLICATION_CREDENTIALS}"
+        )
     creds = service_account.Credentials.from_service_account_file(
         GOOGLE_APPLICATION_CREDENTIALS,
         scopes=["https://www.googleapis.com/auth/drive.readonly"]

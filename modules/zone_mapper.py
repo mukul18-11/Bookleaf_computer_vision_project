@@ -1,7 +1,7 @@
 """
 Zone Mapper Module
 Calculates safe areas, badge zones, and margins in pixel coordinates
-based on image dimensions and DPI.
+based on image dimensions and percentage-based rules.
 
 Every zone is a rectangle: {left, top, right, bottom}
 """
@@ -10,12 +10,11 @@ import cv2
 import numpy as np
 from config import (
     COVER_WIDTH_INCHES,
-    MARGIN_SIDES_MM,
-    MARGIN_TOP_MM,
-    MARGIN_BOTTOM_MM,
-    BADGE_ZONE_HEIGHT_MM,
-    mm_to_pixels,
-    calculate_dpi,
+    COVER_HEIGHT_INCHES,
+    MARGIN_SIDES_FRAC,
+    MARGIN_TOP_FRAC,
+    MARGIN_BOTTOM_FRAC,
+    BADGE_ZONE_HEIGHT_FRAC,
     COLOR_SAFE_ZONE,
     COLOR_BADGE_ZONE,
     COLOR_MARGIN,
@@ -35,16 +34,22 @@ def get_zones(image_width, image_height, dpi=None, cover_type="front"):
         dict with keys: margins, safe_area, badge_zone, dpi
         Each zone is {left, top, right, bottom}
     """
-    if dpi is None:
-        dpi = calculate_dpi(image_width)
+    # Keep a single "dpi" for display/metadata only.
+    dpi_x = image_width / float(COVER_WIDTH_INCHES)
+    dpi_y = image_height / float(COVER_HEIGHT_INCHES)
+    dpi = float(dpi) if dpi is not None else (dpi_x + dpi_y) / 2.0
 
-    # Convert mm margins to pixels
-    margin_left = mm_to_pixels(MARGIN_SIDES_MM, dpi)
-    margin_right = mm_to_pixels(MARGIN_SIDES_MM, dpi)
-    margin_top = mm_to_pixels(MARGIN_TOP_MM, dpi)
-    margin_bottom = mm_to_pixels(MARGIN_BOTTOM_MM, dpi)
-    badge_mm = BADGE_ZONE_HEIGHT_MM if str(cover_type).lower() == "front" else 0
-    badge_height = mm_to_pixels(badge_mm, dpi)
+    # Percentage-based conversion:
+    # This makes the rules resolution independent (works for any pixel dimensions).
+    margin_left = int(round(image_width * MARGIN_SIDES_FRAC))
+    margin_right = int(round(image_width * MARGIN_SIDES_FRAC))
+    margin_top = int(round(image_height * MARGIN_TOP_FRAC))
+    margin_bottom = int(round(image_height * MARGIN_BOTTOM_FRAC))
+    badge_height = (
+        int(round(image_height * BADGE_ZONE_HEIGHT_FRAC))
+        if str(cover_type).lower() == "front"
+        else 0
+    )
 
     # Margins define the unsafe border strip around the cover
     margins = {
@@ -75,6 +80,8 @@ def get_zones(image_width, image_height, dpi=None, cover_type="front"):
         "safe_area": safe_area,
         "badge_zone": badge_zone,
         "dpi": dpi,
+        "dpi_x": dpi_x,
+        "dpi_y": dpi_y,
         "image_width": image_width,
         "image_height": image_height,
     }
@@ -132,7 +139,7 @@ def draw_zones(image, zones):
             2,
         )
         cv2.putText(
-            annotated, "BADGE ZONE (9mm) - NO TEXT HERE",
+            annotated, "BADGE ZONE (4.43% H) - RESERVED",
             (badge["left"] + 10, badge["top"] + 20),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2,
         )

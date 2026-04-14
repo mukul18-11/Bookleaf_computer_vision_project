@@ -133,7 +133,25 @@ def detect_text(image_path, use_google_vision=True):
     method = None
 
     # Try Google Cloud Vision first
-    if use_google_vision and os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if cred_path:
+        cred_path = os.path.expanduser(cred_path)
+        # Help common misconfig: people paste an API key instead of a JSON path.
+        if not cred_path.lower().endswith(".json"):
+            logger.warning(
+                "GOOGLE_APPLICATION_CREDENTIALS should be a path to a service-account JSON file; "
+                "it does not look like a .json path."
+            )
+        if os.path.exists(cred_path):
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+        else:
+            logger.warning(
+                "GOOGLE_APPLICATION_CREDENTIALS is set but the file was not found; "
+                "Google Vision OCR will be skipped."
+            )
+            cred_path = ""
+
+    if use_google_vision and cred_path:
         try:
             detections = detect_text_google_vision(image_path)
             method = "google_vision"

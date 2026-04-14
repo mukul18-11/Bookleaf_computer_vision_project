@@ -22,6 +22,28 @@ MARGIN_BOTTOM_MM = 6      # 6mm from bottom edge
 # Award Badge Reserved Zone
 BADGE_ZONE_HEIGHT_MM = 9  # Bottom 9mm reserved for "Winner of 21st Century Emily Dickinson Award"
 
+# -----------------------------------------------------------------------------
+# Percentage-based zone sizing (resolution independent)
+# -----------------------------------------------------------------------------
+# We treat every cover as 6x8 inches physically, but we avoid DPI/mm->px conversion.
+# Instead, we convert physical distances into *fractions* of the image dimensions.
+#
+# Key fact: 9mm out of an 8-inch tall cover is always ~4.43% of the cover height.
+# 8 inches = 203.2mm, so 9 / 203.2 ≈ 0.04429.
+BADGE_ZONE_HEIGHT_FRAC = 0.0443
+
+# Fractions for margins based on the 6x8in cover spec.
+# (Computed once here so zone mapping can be purely percentage-based.)
+_COVER_WIDTH_MM = COVER_WIDTH_INCHES * 25.4
+_COVER_HEIGHT_MM = COVER_HEIGHT_INCHES * 25.4
+MARGIN_SIDES_FRAC = MARGIN_SIDES_MM / _COVER_WIDTH_MM
+MARGIN_TOP_FRAC = MARGIN_TOP_MM / _COVER_HEIGHT_MM
+MARGIN_BOTTOM_FRAC = MARGIN_BOTTOM_MM / _COVER_HEIGHT_MM
+
+# Border proximity warning (default was 2mm). Expressed as fractions of width/height.
+BORDER_PROXIMITY_FRAC_X = 2.0 / _COVER_WIDTH_MM
+BORDER_PROXIMITY_FRAC_Y = 2.0 / _COVER_HEIGHT_MM
+
 # =============================================================================
 # DETECTION THRESHOLDS
 # =============================================================================
@@ -39,6 +61,7 @@ MIN_DPI = 150                          # Minimum acceptable DPI
 MIN_WIDTH_PIXELS = 1200                # Minimum image width
 BLUR_THRESHOLD = 100.0                 # Laplacian variance below this = blurry
 PIXELATION_BLOCK_SIZE = 8             # Block size for pixelation detection
+
 
 # =============================================================================
 # CLASSIFICATION THRESHOLDS
@@ -69,6 +92,9 @@ COLOR_WARNING = (0, 165, 255)          # Orange - warnings
 # ISSUE TYPES AND SEVERITIES
 # =============================================================================
 ISSUE_BADGE_OVERLAP = "BADGE_OVERLAP"
+ISSUE_BADGE_BUFFER_CONFLICT = "BADGE_BUFFER_CONFLICT"
+ISSUE_BADGE_MISSING = "BADGE_MISSING"
+ISSUE_BADGE_ZONE_TEXT = "BADGE_ZONE_TEXT"
 ISSUE_AUTHOR_BADGE_CONFLICT = "AUTHOR_BADGE_CONFLICT"
 ISSUE_MARGIN_VIOLATION = "MARGIN_VIOLATION"
 ISSUE_BORDER_PROXIMITY = "BORDER_PROXIMITY"
@@ -89,7 +115,9 @@ STATUS_REVIEW = "REVIEW_NEEDED"
 # =============================================================================
 # API CREDENTIALS (loaded from .env)
 # =============================================================================
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+GOOGLE_APPLICATION_CREDENTIALS = os.path.expanduser(
+    os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+).strip()
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY", "")
 AIRTABLE_BASE_ID = os.getenv("AIRTABLE_BASE_ID", "")
 AIRTABLE_TABLE_NAME = os.getenv("AIRTABLE_TABLE_NAME", "Cover Analysis")
