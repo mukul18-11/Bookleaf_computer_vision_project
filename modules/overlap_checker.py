@@ -330,11 +330,18 @@ def check_reserved_badge_zone_only(word_detections, badge_zone):
 
     - Bottom 9mm (4.43% height) is reserved for the badge phrase only.
     - Any other text inside the zone => CRITICAL.
-    - If badge phrase is not found at all inside the zone => CRITICAL.
+    - If badge phrase is not found at all inside/near the zone => CRITICAL.
     """
     tol = max(0, int(OVERLAP_TOLERANCE_PIXELS))
     strict_zone = dict(badge_zone)
     strict_zone["top"] = max(0, strict_zone["top"] - tol)
+
+    # Use a wider search area for the badge phrase itself.
+    # OCR bounding boxes often place the badge text slightly above the
+    # computed zone, so we look up to 2× the badge zone height above it.
+    badge_zone_height = badge_zone["bottom"] - badge_zone["top"]
+    badge_search_zone = dict(strict_zone)
+    badge_search_zone["top"] = max(0, strict_zone["top"] - badge_zone_height * 2)
 
     hits = []
     other_hits = []
@@ -344,19 +351,27 @@ def check_reserved_badge_zone_only(word_detections, badge_zone):
         bbox = det.get("bbox")
         if not bbox:
             continue
-        if not rectangles_overlap(bbox, strict_zone):
-            continue
 
         text = det.get("text", "")
+        in_strict = rectangles_overlap(bbox, strict_zone)
+        in_search = rectangles_overlap(bbox, badge_search_zone)
+
+        if not in_strict and not in_search:
+            continue
+
         allowed = is_badge_component_text(text) or is_allowed_badge_text(text)
-        hits.append({"text": text, "bbox": bbox, "allowed": bool(allowed)})
+
+        if in_strict:
+            hits.append({"text": text, "bbox": bbox, "allowed": bool(allowed)})
 
         if allowed:
-            # Consider the badge "present" only if OCR saw the anchor token "award".
-            if is_allowed_badge_text(text) or ("award" in set(_normalize_tokens(text))):
+            # Consider the badge "present" if OCR saw the anchor token "award"
+            # anywhere in the badge search area (strict zone + region above).
+            if in_search and (is_allowed_badge_text(text) or ("award" in set(_normalize_tokens(text)))):
                 badge_award_found = True
         else:
-            other_hits.append({"text": text, "bbox": bbox})
+            if in_strict:
+                other_hits.append({"text": text, "bbox": bbox})
 
     issues = []
 

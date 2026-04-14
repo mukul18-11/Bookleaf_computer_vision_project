@@ -124,7 +124,7 @@ with gr.Blocks(title="BookLeaf Cover Validator") as demo:
 
     with gr.Row():
         with gr.Column(scale=1):
-            image_in = gr.Image(type="filepath", label="Book cover image")
+            image_in = gr.Image(type="filepath", label="Book cover image", sources=["upload"])
             run_btn = gr.Button("Validate cover", variant="primary")
             gr.Examples(
                 examples=_example_list(),
